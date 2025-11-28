@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Rewards Inventory - CleanTrack</title>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#2A62C8",
+                        secondary: "#50E3C2",
+                    },
+                    fontFamily: {
+                        display: ["Public Sans", "sans-serif"],
+                        mono: ["Space Grotesk", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
+
+    <script src="admin-header.js"></script>
+    <script src="admin-utils.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+    <style>
+        /* Background & Glass Effect */
+        body {
+            background-color: #f8fafc;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(42, 98, 200, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(80, 227, 194, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* Card Hover Effects */
+        .product-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px -5px rgba(42, 98, 200, 0.15);
+        }
+
+        /* Action Buttons Transition */
+        .card-actions {
+            transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="font-display text-slate-800 antialiased">
+
+    <div id="app-header"></div>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+
+        <!-- HEADER SECTION -->
+        <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4" data-aos="fade-down">
+            <div>
+                <h1 class="text-3xl font-black tracking-tight text-slate-900">Manajemen Hadiah</h1>
+                <p class="text-slate-500 font-medium mt-1">Atur katalog penukaran poin untuk warga.</p>
+            </div>
+
+            <button onclick="openModal('add')"
+                class="group relative px-6 py-3 rounded-xl bg-slate-900 text-white font-bold shadow-lg hover:bg-primary transition-all active:scale-95 overflow-hidden">
+                <div
+                    class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                </div>
+                <span class="relative flex items-center gap-2">
+                    <span class="material-symbols-outlined">add_circle</span> Tambah Item
+                </span>
+            </button>
+        </div>
+
+        <!-- STATS BAR -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="glass-panel p-4 rounded-2xl flex items-center gap-4" data-aos="fade-up" data-aos-delay="0">
+                <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl">redeem</span>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Item</p>
+                    <h3 class="text-2xl font-black text-slate-900 font-mono" id="stat-total-items">0</h3>
+                </div>
+            </div>
+            <div class="glass-panel p-4 rounded-2xl flex items-center gap-4" data-aos="fade-up" data-aos-delay="100">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl">api</span>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">API Terhubung</p>
+                    <h3 class="text-2xl font-black text-slate-900 font-mono" id="stat-api-connected">0</h3>
+                </div>
+            </div>
+            <div class="glass-panel p-4 rounded-2xl flex items-center gap-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl">inventory_2</span>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Stok</p>
+                    <h3 class="text-2xl font-black text-slate-900 font-mono" id="stat-total-stock">0</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILTER & SEARCH -->
+        <div class="glass-panel p-4 rounded-2xl mb-8 flex flex-col sm:flex-row gap-4 justify-between items-center shadow-sm"
+            data-aos="fade-up">
+            <div class="relative w-full sm:w-96 group">
+                <span
+                    class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">search</span>
+                <input type="text" id="search-input"
+                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-primary focus:border-primary transition-all text-sm font-bold placeholder:font-medium"
+                    placeholder="Cari hadiah...">
+            </div>
+
+            <div class="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
+                <button onclick="filterCategory('All')"
+                    class="filter-btn active px-4 py-2 rounded-lg text-xs font-bold bg-slate-900 text-white transition-all shadow-md whitespace-nowrap">Semua</button>
+                <button onclick="filterCategory('Pulsa')"
+                    class="filter-btn px-4 py-2 rounded-lg text-xs font-bold bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 transition-all whitespace-nowrap">Pulsa</button>
+                <button onclick="filterCategory('E-Wallet')"
+                    class="filter-btn px-4 py-2 rounded-lg text-xs font-bold bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 transition-all whitespace-nowrap">E-Wallet</button>
+                <button onclick="filterCategory('PLN')"
+                    class="filter-btn px-4 py-2 rounded-lg text-xs font-bold bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 transition-all whitespace-nowrap">PLN</button>
+            </div>
+        </div>
+
+        <!-- PRODUCTS GRID -->
+        <div id="rewards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Cards Injected Here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden flex flex-col items-center justify-center py-20 text-center">
+            <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                <span class="material-symbols-outlined text-4xl text-slate-300">inventory_2</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900">Katalog Kosong</h3>
+            <p class="text-slate-500 text-sm mt-1">Belum ada item hadiah yang ditambahkan.</p>
+        </div>
+
+    </main>
+
+    <!-- MODAL (GLASS STYLE) -->
+    <div id="reward-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
+
+        <div class="bg-white/95 backdrop-blur-xl w-full max-w-lg rounded-3xl shadow-2xl relative z-10 overflow-hidden transform scale-95 opacity-0 transition-all duration-300"
+            id="modal-content">
+
+            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-white/50">
+                <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">edit_square</span>
+                    <span id="modal-title">Tambah Hadiah</span>
+                </h3>
+                <button onclick="closeModal()"
+                    class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <form id="reward-form" class="p-6 space-y-5 max-h-[75vh] overflow-y-auto custom-scroll">
+                <input type="hidden" id="input-id">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Produk</label>
+                        <input type="text" id="input-name" required
+                            class="w-full rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-primary focus:border-primary font-bold text-slate-900">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Kategori</label>
+                        <select id="input-category"
+                            class="w-full rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-primary focus:border-primary text-sm font-medium">
+                            <option value="PLN">Token PLN</option>
+                            <option value="Pulsa">Pulsa Reguler</option>
+                            <option value="E-Wallet">Saldo E-Wallet</option>
+                            <option value="Voucher">Voucher Belanja</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Harga (Poin)</label>
+                        <input type="number" id="input-cost" required min="1"
+                            class="w-full rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-primary focus:border-primary font-mono font-bold text-slate-900">
+                    </div>
+                </div>
+
+                <div class="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                    <div class="flex items-center gap-2 mb-3 text-blue-700">
+                        <span class="material-symbols-outlined text-lg">api</span>
+                        <span class="text-xs font-black uppercase tracking-wider">Konfigurasi API</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-blue-400 mb-1">PROVIDER ID</label>
+                            <input type="text" id="input-provider"
+                                class="w-full rounded-lg border-blue-200 bg-white text-xs font-mono uppercase px-3 py-2 text-slate-700 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="EX: DIGIFLAZZ">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-blue-400 mb-1">PRODUCT CODE</label>
+                            <input type="text" id="input-code"
+                                class="w-full rounded-lg border-blue-200 bg-white text-xs font-mono uppercase px-3 py-2 text-slate-700 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="EX: PLN20">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Stok Awal</label>
+                        <input type="number" id="input-stock" required min="0"
+                            class="w-full rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-primary focus:border-primary font-mono text-slate-900">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">URL Gambar</label>
+                        <input type="text" id="input-image"
+                            class="w-full rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-primary focus:border-primary text-xs"
+                            placeholder="https://...">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Deskripsi Singkat</label>
+                    <textarea id="input-desc" rows="2"
+                        class="w-full rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-primary focus:border-primary text-sm"></textarea>
+                </div>
+            </form>
+
+            <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
+                <button onclick="closeModal()"
+                    class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-200 transition-colors">Batal</button>
+                <button onclick="saveReward()"
+                    class="px-6 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all active:scale-95">Simpan
+                    Data</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        AOS.init();
+        let allRewards = [];
+        let isEditing = false;
+        let currentFilter = 'All';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderAdminHeader('rewards');
+            initAdminData();
+            loadRewards();
+
+            document.getElementById('search-input').addEventListener('input', handleSearch);
+        });
+
+        function loadRewards() {
+            allRewards = getRewards();
+            renderGrid(allRewards);
+            updateStats();
+        }
+
+        function updateStats() {
+            document.getElementById('stat-total-items').textContent = allRewards.length;
+            document.getElementById('stat-api-connected').textContent = allRewards.filter(r => r.api_code && r.api_code.trim() !== '').length;
+            document.getElementById('stat-total-stock').textContent = allRewards.reduce((sum, item) => sum + parseInt(item.stock || 0), 0);
+        }
+
+        function filterCategory(cat) {
+            currentFilter = cat;
+            // Update Buttons UI
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.textContent === (cat === 'All' ? 'Semua' : cat)) {
+                    btn.classList.add('bg-slate-900', 'text-white', 'shadow-md');
+                    btn.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+                } else {
+                    btn.classList.remove('bg-slate-900', 'text-white', 'shadow-md');
+                    btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+                }
+            });
+            handleSearch();
+        }
+
+        function handleSearch() {
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const filtered = allRewards.filter(item => {
+                const matchSearch = item.name.toLowerCase().includes(search) || (item.api_code && item.api_code.toLowerCase().includes(search));
+                const matchCat = currentFilter === 'All' || item.category === currentFilter;
+                return matchSearch && matchCat;
+            });
+            renderGrid(filtered);
+        }
+
+        function renderGrid(data) {
+            const grid = document.getElementById('rewards-grid');
+            const emptyState = document.getElementById('empty-state');
+            grid.innerHTML = '';
+
+            if (data.length === 0) {
+                grid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            grid.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+
+            data.forEach(item => {
+                const stockPercent = Math.min((item.stock / 100) * 100, 100); // Asumsi max 100 untuk visual bar
+                const stockColor = item.stock > 20 ? 'bg-green-500' : 'bg-red-500';
+                const stockText = item.stock > 20 ? 'text-green-600' : 'text-red-600';
+
+                // Kategori Label Style
+                let catClass = 'bg-blue-100 text-blue-700';
+                if (item.category === 'PLN') catClass = 'bg-yellow-100 text-yellow-700';
+                if (item.category === 'E-Wallet') catClass = 'bg-purple-100 text-purple-700';
+                if (item.category === 'Pulsa') catClass = 'bg-red-100 text-red-700';
+
+                // Image Fallback
+                const imgUrl = item.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=random&color=fff&size=200`;
+
+                const html = `
+                <div class="product-card glass-panel rounded-3xl overflow-hidden group relative flex flex-col h-full" data-aos="fade-up">
+                    
+                    <!-- Image Area -->
+                    <div class="relative h-40 bg-slate-100 overflow-hidden">
+                        <img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-60"></div>
+                        
+                        <span class="absolute top-3 left-3 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${catClass} shadow-sm backdrop-blur-md bg-opacity-90">
+                            ${item.category}
+                        </span>
+
+                        <div class="absolute bottom-3 left-3 text-white">
+                            <p class="text-xs opacity-80 font-medium">Harga Tukar</p>
+                            <p class="text-xl font-black font-mono">${item.cost} <span class="text-xs">Pts</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Content Area -->
+                    <div class="p-5 flex-1 flex flex-col">
+                        <div class="mb-4">
+                            <h3 class="font-bold text-slate-900 text-lg leading-tight mb-1 truncate" title="${item.name}">${item.name}</h3>
+                            <p class="text-xs text-slate-500 line-clamp-2 min-h-[2.5em]">${item.description || 'Tidak ada deskripsi.'}</p>
+                        </div>
+
+                        <div class="mt-auto space-y-3">
+                            <!-- API Badge -->
+                            <div class="flex items-center gap-2">
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                                    ${item.api_code || 'NO-CODE'}
+                                </span>
+                                <span class="h-px flex-1 bg-slate-100"></span>
+                            </div>
+
+                            <!-- Stock Bar -->
+                            <div>
+                                <div class="flex justify-between text-[10px] font-bold mb-1">
+                                    <span class="text-slate-400">Stok Tersedia</span>
+                                    <span class="${stockText}">${item.stock} Unit</span>
+                                </div>
+                                <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full ${stockColor} rounded-full transition-all duration-500" style="width: ${stockPercent}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Overlay (Desktop Hover / Mobile Visible at Bottom) -->
+                    <!-- Logic: On Desktop hidden until hover. On Mobile always visible but we use a meatball approach or simpler bottom bar -->
+                    <div class="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0 lg:flex">
+                        <button onclick="editItem('${item.id}')" class="w-8 h-8 rounded-full bg-white text-blue-600 shadow-lg flex items-center justify-center hover:bg-blue-50 transition-colors" title="Edit">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                        </button>
+                        <button onclick="deleteItem('${item.id}')" class="w-8 h-8 rounded-full bg-white text-red-600 shadow-lg flex items-center justify-center hover:bg-red-50 transition-colors" title="Hapus">
+                            <span class="material-symbols-outlined text-sm">delete</span>
+                        </button>
+                    </div>
+
+                    <!-- Mobile Action Trigger (Always visible on touch devices via CSS logic if needed, but here simplified to hover for demo, 
+                         OR we can make them always visible on small screens) -->
+                    <div class="lg:hidden absolute top-3 right-3 flex flex-col gap-2">
+                         <button onclick="editItem('${item.id}')" class="w-8 h-8 rounded-full bg-white/90 backdrop-blur text-blue-600 shadow-sm flex items-center justify-center">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                        </button>
+                        <button onclick="deleteItem('${item.id}')" class="w-8 h-8 rounded-full bg-white/90 backdrop-blur text-red-600 shadow-sm flex items-center justify-center">
+                            <span class="material-symbols-outlined text-sm">delete</span>
+                        </button>
+                    </div>
+
+                </div>`;
+                grid.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        // --- CRUD LOGIC (Same as before but linked to new UI) ---
+        function openModal(mode, id = null) {
+            const modal = document.getElementById('reward-modal');
+            const content = document.getElementById('modal-content');
+            const form = document.getElementById('reward-form');
+            form.reset();
+
+            if (mode === 'edit') {
+                isEditing = true;
+                document.getElementById('modal-title').textContent = "Edit Hadiah";
+                const item = allRewards.find(r => r.id === id);
+                if (item) {
+                    document.getElementById('input-id').value = item.id;
+                    document.getElementById('input-name').value = item.name;
+                    document.getElementById('input-category').value = item.category;
+                    document.getElementById('input-cost').value = item.cost;
+                    document.getElementById('input-stock').value = item.stock;
+                    document.getElementById('input-provider').value = item.api_provider || '';
+                    document.getElementById('input-code').value = item.api_code || '';
+                    document.getElementById('input-image').value = item.image || '';
+                    document.getElementById('input-desc').value = item.description || '';
+                }
+            } else {
+                isEditing = false;
+                document.getElementById('modal-title').textContent = "Tambah Hadiah";
+                document.getElementById('input-id').value = '';
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('reward-modal');
+            const content = document.getElementById('modal-content');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function saveReward() {
+            const id = document.getElementById('input-id').value;
+            const name = document.getElementById('input-name').value;
+            const category = document.getElementById('input-category').value;
+            const cost = parseInt(document.getElementById('input-cost').value);
+            const stock = parseInt(document.getElementById('input-stock').value);
+            const provider = document.getElementById('input-provider').value.toUpperCase();
+            const code = document.getElementById('input-code').value.toUpperCase();
+            const desc = document.getElementById('input-desc').value;
+            const image = document.getElementById('input-image').value;
+
+            if (!name || isNaN(cost)) { alert("Nama dan Harga Poin wajib diisi!"); return; }
+
+            if (isEditing && id) {
+                const index = allRewards.findIndex(r => r.id === id);
+                if (index !== -1) {
+                    allRewards[index] = { ...allRewards[index], name, category, cost, stock, api_provider: provider, api_code: code, description: desc, image };
+                }
+            } else {
+                const newId = 'RWD-' + Math.floor(Date.now() / 100);
+                const newItem = { id: newId, name, category, cost, stock, api_provider: provider, api_code: code, description: desc, image };
+                allRewards.push(newItem);
+            }
+            saveRewards(allRewards);
+            closeModal();
+            loadRewards();
+        }
+
+        function deleteItem(id) {
+            if (confirm("Hapus item ini dari katalog?")) {
+                allRewards = allRewards.filter(r => r.id !== id);
+                saveRewards(allRewards);
+                loadRewards();
+            }
+        }
+
+        function editItem(id) { openModal('edit', id); }
+    </script>
+</body>
+
+</html>

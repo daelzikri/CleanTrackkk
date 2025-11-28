@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Command Center - CleanTrack</title>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#2A62C8",
+                        secondary: "#50E3C2",
+                    },
+                    fontFamily: {
+                        display: ["Public Sans", "sans-serif"],
+                        mono: ["Space Grotesk", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
+
+    <script src="admin-header.js"></script>
+    <script src="admin-utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+    <style>
+        /* Ambient Background */
+        body {
+            background-color: #f8fafc;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(42, 98, 200, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(80, 227, 194, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-card {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px -5px rgba(42, 98, 200, 0.15);
+        }
+
+        .stat-icon-bg {
+            position: absolute;
+            right: -20px;
+            bottom: -20px;
+            font-size: 8rem;
+            opacity: 0.05;
+            transform: rotate(-15deg);
+            pointer-events: none;
+        }
+
+        /* Table Specific Styles */
+        .table-row-floating {
+            transition: all 0.2s ease;
+        }
+
+        .table-row-floating:hover {
+            transform: scale(1.01);
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            z-index: 10;
+            position: relative;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+
+<body class="font-display text-slate-800 antialiased selection:bg-primary/20">
+
+    <div id="app-header"></div>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row justify-between items-end mb-10 gap-4" data-aos="fade-down">
+            <div>
+                <h1 class="text-3xl font-black tracking-tight text-slate-900">Dashboard Overview</h1>
+                <p class="text-slate-500 font-medium mt-1">Pantau performa operasional kota secara real-time.</p>
+            </div>
+            <div
+                class="flex items-center gap-2 bg-white/50 px-4 py-2 rounded-full border border-white/60 shadow-sm backdrop-blur-sm">
+                <span class="relative flex h-3 w-3">
+                    <span
+                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <span class="text-xs font-bold text-slate-600 font-mono">LIVE UPDATE</span>
+            </div>
+        </div>
+
+        <!-- Stats Grid (Holographic Cards) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+
+            <div class="glass-card stat-card rounded-3xl p-6 relative group" data-aos="fade-up" data-aos-delay="0">
+                <span
+                    class="material-symbols-outlined stat-icon-bg group-hover:scale-110 transition-transform text-blue-600">folder_open</span>
+                <div class="relative z-10">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 shadow-inner">
+                        <span class="material-symbols-outlined text-2xl">folder_open</span>
+                    </div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Laporan</p>
+                    <h3 class="text-4xl font-black text-slate-900 mt-1 font-mono" id="stat-total">0</h3>
+                </div>
+            </div>
+
+            <div class="glass-card stat-card rounded-3xl p-6 relative group" data-aos="fade-up" data-aos-delay="100">
+                <span
+                    class="material-symbols-outlined stat-icon-bg group-hover:scale-110 transition-transform text-yellow-500">hourglass_top</span>
+                <div class="relative z-10">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-yellow-50 text-yellow-600 flex items-center justify-center mb-4 shadow-inner">
+                        <span class="material-symbols-outlined text-2xl animate-pulse">hourglass_top</span>
+                    </div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Perlu Tindakan</p>
+                    <h3 class="text-4xl font-black text-slate-900 mt-1 font-mono" id="stat-pending">0</h3>
+                </div>
+            </div>
+
+            <div class="glass-card stat-card rounded-3xl p-6 relative group" data-aos="fade-up" data-aos-delay="200">
+                <span
+                    class="material-symbols-outlined stat-icon-bg group-hover:scale-110 transition-transform text-green-500">check_circle</span>
+                <div class="relative z-10">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center mb-4 shadow-inner">
+                        <span class="material-symbols-outlined text-2xl">check_circle</span>
+                    </div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Terselesaikan</p>
+                    <h3 class="text-4xl font-black text-slate-900 mt-1 font-mono" id="stat-resolved">0</h3>
+                </div>
+            </div>
+
+            <div class="glass-card stat-card rounded-3xl p-6 relative group" data-aos="fade-up" data-aos-delay="300">
+                <span
+                    class="material-symbols-outlined stat-icon-bg group-hover:scale-110 transition-transform text-orange-500">star</span>
+                <div class="relative z-10">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mb-4 shadow-inner">
+                        <span class="material-symbols-outlined text-2xl">star</span>
+                    </div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Rating Publik</p>
+                    <h3 class="text-4xl font-black text-slate-900 mt-1 font-mono" id="stat-rating">0.0</h3>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Charts & Feeds -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+
+            <!-- Main Chart -->
+            <div class="lg:col-span-2 glass-card rounded-3xl p-8 relative overflow-hidden" data-aos="fade-right">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">show_chart</span> Tren Laporan Masuk
+                    </h3>
+                    <select id="trendFilter" onchange="updateTrendFilter(this.value)"
+                        class="text-xs font-bold border-none bg-slate-100 rounded-lg py-2 px-4 text-slate-600 cursor-pointer hover:bg-slate-200 transition-colors focus:ring-0">
+                        <option value="7">7 Hari Terakhir</option>
+                        <option value="30">30 Hari Terakhir</option>
+                    </select>
+                </div>
+                <!-- INCREASED HEIGHT TO REMOVE GAP -->
+                <div class="h-[400px] w-full relative">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Side Panel (Status & Feed) -->
+            <div class="space-y-8">
+
+                <!-- Status Donut -->
+                <div class="glass-card rounded-3xl p-8" data-aos="fade-left">
+                    <h3 class="font-bold text-slate-800 text-lg mb-6 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-slate-400">pie_chart</span> Distribusi Status
+                    </h3>
+                    <div class="h-48 relative">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Live Feed Bubbles -->
+                <div class="glass-card rounded-3xl p-6 h-full max-h-[400px] flex flex-col" data-aos="fade-up"
+                    data-aos-delay="100">
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-4">
+                        <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-yellow-500">forum</span> Suara Warga
+                        </h3>
+                    </div>
+
+                    <div id="reviews-feed" class="flex-1 overflow-y-auto space-y-4 custom-scroll pr-2">
+                        <!-- Feed Items Injected Here -->
+                        <div class="text-center py-8 text-slate-400 text-sm">Belum ada ulasan baru.</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- RECENT REPORTS TABLE -->
+        <div class="glass-card rounded-3xl overflow-hidden" data-aos="fade-up">
+            <div
+                class="p-6 border-b border-slate-100/50 flex justify-between items-center bg-white/40 backdrop-blur-sm">
+                <h3 class="font-bold text-slate-900 text-lg flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">table_rows</span> Laporan Terbaru Masuk
+                </h3>
+                <a href="AdminReports.html"
+                    class="text-xs font-bold text-primary hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">
+                    Lihat Semua
+                </a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead class="bg-slate-50/50 text-xs uppercase text-slate-500 font-bold border-b border-slate-100">
+                        <tr>
+                            <th class="px-6 py-4">ID & Pelapor</th>
+                            <th class="px-6 py-4">Lokasi</th>
+                            <th class="px-6 py-4">Status</th>
+                            <th class="px-6 py-4 text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-table-body" class="divide-y divide-slate-100 bg-white/20">
+                        <!-- JS Injected Here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        AOS.init();
+        let statusChartInstance = null;
+        let trendChartInstance = null;
+        let globalReports = []; // Simpan data global untuk filtering
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderAdminHeader('dashboard');
+            initAdminData();
+            loadDashboardData();
+            window.addEventListener('storageUpdated', loadDashboardData);
+        });
+
+        function loadDashboardData() {
+            globalReports = getReports();
+
+            // STATS UPDATE
+            const total = globalReports.length;
+            const pending = globalReports.filter(r => r.status === 'Pending').length;
+            const resolved = globalReports.filter(r => r.status === 'Resolved').length;
+            const rejected = globalReports.filter(r => r.status === 'Rejected').length;
+            const inProgress = globalReports.filter(r => r.status === 'In Progress').length;
+
+            const ratedReports = globalReports.filter(r => r.rating > 0);
+            const avgRating = ratedReports.length > 0
+                ? (ratedReports.reduce((acc, curr) => acc + curr.rating, 0) / ratedReports.length).toFixed(1)
+                : "0.0";
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-pending').textContent = pending;
+            document.getElementById('stat-resolved').textContent = resolved;
+            document.getElementById('stat-rating').textContent = avgRating;
+
+            renderStatusChart(pending, inProgress, resolved, rejected);
+            renderTrendChart(7); // Default 7 hari
+            renderReviews(globalReports);
+            renderRecentTable(globalReports);
+        }
+
+        // --- FILTER FUNCTION ---
+        function updateTrendFilter(days) {
+            renderTrendChart(parseInt(days));
+        }
+
+        // Helper: Generate array tanggal N hari terakhir (Format ID: DD/MM/YYYY)
+        function generateDateLabels(days) {
+            const labels = [];
+            for (let i = days - 1; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                labels.push(d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }));
+            }
+            return labels;
+        }
+
+        function renderTrendChart(days) {
+            // 1. Generate Labels (Sumbu X)
+            const labels = generateDateLabels(days);
+
+            // 2. Map Data ke Labels (Sumbu Y)
+            // Hitung jumlah laporan untuk setiap tanggal di labels
+            const dataPoints = labels.map(dateLabel => {
+                // Filter laporan yang tanggalnya cocok dengan label
+                return globalReports.filter(r => r.date === dateLabel).length;
+            });
+
+            const ctxTrend = document.getElementById('trendChart').getContext('2d');
+            if (trendChartInstance) trendChartInstance.destroy();
+
+            trendChartInstance = new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: labels, // Menggunakan tanggal urut 7/30 hari terakhir
+                    datasets: [{
+                        label: 'Laporan Masuk',
+                        data: dataPoints,
+                        borderColor: '#2A62C8',
+                        backgroundColor: (context) => {
+                            const ctx = context.chart.ctx;
+                            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                            gradient.addColorStop(0, 'rgba(42, 98, 200, 0.2)');
+                            gradient.addColorStop(1, 'rgba(42, 98, 200, 0)');
+                            return gradient;
+                        },
+                        borderWidth: 4,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#2A62C8',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Penting agar grafik mengisi tinggi container
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { borderDash: [4, 4], color: '#f1f5f9' },
+                            ticks: {
+                                font: { family: "'Space Grotesk', sans-serif" },
+                                precision: 0 // Pastikan angka bulat
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { family: "'Space Grotesk', sans-serif" },
+                                maxTicksLimit: days === 30 ? 10 : 7 // Agar tidak terlalu padat saat 30 hari
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderStatusChart(pending, inProgress, resolved, rejected) {
+            const ctxStatus = document.getElementById('statusChart').getContext('2d');
+            if (statusChartInstance) statusChartInstance.destroy();
+
+            statusChartInstance = new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pending', 'Proses', 'Selesai', 'Ditolak'],
+                    datasets: [{
+                        data: [pending, inProgress, resolved, rejected],
+                        backgroundColor: ['#EAB308', '#3B82F6', '#10B981', '#EF4444'],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { family: "'Public Sans', sans-serif" } } }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        function renderRecentTable(allReports) {
+            // Sort by date (newest first) and take top 5
+            const recentReports = [...allReports].sort((a, b) => parseDateID(b.date) - parseDateID(a.date)).slice(0, 5);
+            const tbody = document.getElementById('recent-table-body');
+            tbody.innerHTML = '';
+
+            if (recentReports.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400 text-sm">Belum ada data laporan.</td></tr>`;
+                return;
+            }
+
+            recentReports.forEach(r => {
+                const statusStyle = getStatusColor(r.status);
+                const loc = r.location.length > 30 ? r.location.substring(0, 30) + '...' : r.location;
+
+                const html = `
+                    <tr class="table-row-floating border-b border-slate-50 last:border-none hover:bg-white/60 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 border border-slate-200">
+                                    ${r.reporterName.charAt(0)}
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-slate-900">${r.reporterName}</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[10px] text-slate-400 font-mono bg-slate-100 px-1 rounded">#${r.id}</span>
+                                        <span class="text-[10px] text-slate-400">${r.date}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-1 text-slate-500">
+                                <span class="material-symbols-outlined text-[16px]">location_on</span>
+                                <span class="text-xs font-medium">${loc}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${statusStyle.badge}">
+                                <span class="w-1.5 h-1.5 rounded-full ${statusStyle.dot}"></span>
+                                ${r.status}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="AdminReportDetail.html?id=${r.id}" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white hover:bg-primary hover:text-white text-slate-400 border border-slate-200 shadow-sm transition-all" title="Lihat Detail">
+                                <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                            </a>
+                        </td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        function renderReviews(reports) {
+            const reviews = reports.filter(r => r.status === 'Resolved' && (r.rating > 0 || r.reviewContent));
+            const feed = document.getElementById('reviews-feed');
+
+            if (reviews.length > 0) {
+                feed.innerHTML = '';
+                reviews.forEach(r => {
+                    const stars = '★'.repeat(r.rating || 0);
+                    const html = `
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 border border-slate-200">
+                                        ${r.reporterName.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-bold text-slate-800">${r.reporterName}</p>
+                                        <p class="text-[10px] text-slate-400">${r.date}</p>
+                                    </div>
+                                </div>
+                                <span class="text-yellow-400 text-xs tracking-widest">${stars}</span>
+                            </div>
+                            <p class="text-xs text-slate-600 italic bg-slate-50 p-2 rounded-lg border border-slate-50">"${r.reviewContent || 'Memberikan rating tanpa komentar.'}"</p>
+                        </div>
+                    `;
+                    feed.insertAdjacentHTML('beforeend', html);
+                });
+            }
+        }
+    </script>
+</body>
+
+</html>
